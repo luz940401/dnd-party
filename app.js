@@ -16,7 +16,7 @@ function toast(text){$('#toast').textContent=text;$('#toast').classList.add('sho
 function options(a,selected){return a.map(x=>`<option ${x===selected?'selected':''}>${esc(x)}</option>`).join('')}
 function ownerOptions(selected,exclude){return [VAULT,...state.characters.map(c=>c.id)].filter(id=>id!==exclude).map(id=>`<option value="${esc(id)}" ${id===selected?'selected':''}>${esc(ownerName(id))}</option>`).join('')}
 function editable(key,tag='span',className=''){return `<${tag} class="${className} ${dm?'editable':''}" ${dm?`data-text="${key}" role="button" tabindex="0" title="點選修改${esc(textLabels[key])}" aria-label="修改${esc(textLabels[key])}"`:''}>${esc(state.settings[key])}</${tag}>`}
-function modal(html){$('#modalBody').innerHTML=html;if(!$('#modal').open)$('#modal').showModal()}
+function modal(html){$('#modalBody').innerHTML=html;if(!$('#modal').open)$('#modal').showModal();$('#modal').scrollTop=0}
 function close(){$('#modal').close()}
 function art(icon,image=''){if(image)return `<span class="item-icon custom-art"><img src="${esc(image)}" alt=""></span>`;const n=iconKeys.indexOf(icon);return n<0?`<span class="item-icon">${esc(icon)}</span>`:`<span aria-hidden="true" class="item-icon item-art" style="--ix:${n%4};--iy:${Math.floor(n/4)}"></span>`}
 function rarityName(value){return ({'非普通':'魔法','非常稀有':'獨特','傳奇':'傳說'})[value]||value}

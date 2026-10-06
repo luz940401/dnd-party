@@ -41,3 +41,5 @@ button,input,select,textarea{font-family:inherit;font-size:15px}button{font-weig
 .legend-entry i.gem{width:25px;height:29px}
 
 .danger{color:#942f24;border-color:#a9563c;background:#f4d9bd}.danger:hover{color:#fff8e5;background:#923c2e;border-color:#783024}.actions{flex-wrap:wrap}.item-origin{clear:both;margin:22px 0;padding:16px 18px;background:#e5c78633;border:1px solid #b38a4d;border-radius:4px}.item-origin h3{font-size:17px;margin:0 0 10px}.item-origin p{margin:8px 0;font-size:15px}
+
+dialog{position:fixed}
