@@ -86,3 +86,12 @@ details.appearance-editor>summary{cursor:pointer;font-weight:700;color:#61451f;f
 .bonus-editor{border:1px solid #b49761;padding:16px;border-radius:6px}.bonus-editor legend{font-weight:700}.bonus-editor p{font-size:12px;line-height:1.7;color:#705536}.item-bonuses{display:flex;gap:5px;flex-wrap:wrap;margin:9px 0}.item-bonuses>span{display:flex;align-items:center;gap:5px;border:1px solid #baa16a;background:#fff2cf;padding:4px 6px;border-radius:4px}.item-bonuses small{font-size:11px!important;margin:0!important}.item-bonuses b{font-size:14px;color:#68451c}.equipped-item .item-bonuses{justify-content:center}.bonus-editor[hidden]{display:none!important}
 
 .bold-text #itemDescription.rich-description strong,.bold-text #itemDescription.rich-description b{font-weight:800!important}
+
+/* Allow nested fieldsets and grid tracks to shrink inside the modal. */
+#modal{width:640px;max-width:calc(100vw - 24px);max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain;padding:24px;scrollbar-gutter:stable}
+#modalBody,#modal form,#modal fieldset,#modal .form-grid,#modal .form-grid>*,#modal label,#modal .description-editor{min-width:0;max-width:100%;box-sizing:border-box}
+#modal .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+#modal input:not([type=checkbox]):not([type=radio]):not([type=color]),#modal select,#modal textarea{min-width:0;width:100%;box-sizing:border-box}
+#modal fieldset{margin-inline:0}#modal legend{max-width:100%;white-space:normal;overflow-wrap:anywhere}#modal .rich-description{overflow-wrap:anywhere;word-break:break-word}
+#modal .item-image-editor>div{min-width:0}#modal .item-image-editor>div:first-child{flex-shrink:0}#modal .actions{flex-wrap:wrap}#modal .actions button{max-width:100%;white-space:normal}
+@media(max-width:650px){#modal{padding:18px;width:calc(100vw - 24px)}#modal .form-grid{grid-template-columns:minmax(0,1fr)}#modal .wide{grid-column:1/-1}#modal .bonus-editor,#modal .appearance-editor{padding:12px}#modal .description-tools{gap:6px}#modal .description-tools button{padding:8px 10px}}
