@@ -157,3 +157,5 @@ details.appearance-editor>summary{cursor:pointer;font-weight:700;color:#61451f;f
 
 /* Show the rarity color immediately while the shared gem atlas loads. */
 .gem,.legend-entry i.gem{background-color:var(--tier,#d8bf83)}
+
+.skill-scope-controls{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0}.skill-scope-controls select{width:100%;min-width:0;font-size:16px}.skill-common-label{display:flex;align-items:center;gap:9px}.skill-common-label input{width:auto!important}@media(max-width:650px){.skill-scope-controls{grid-template-columns:1fr;gap:10px}}
