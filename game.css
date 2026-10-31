@@ -177,3 +177,5 @@ details.appearance-editor>summary{cursor:pointer;font-weight:700;color:#61451f;f
 .companion-art>.item-icon{display:block;width:100%;height:100%;max-width:none;max-height:none;font-size:64px;line-height:1}.companion-art>.item-icon img{width:100%;height:100%}
 
 .battle-character{grid-column:1/-1;display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:16px;border:1px solid #b9944a;border-radius:8px;background:#ead9af}.battle-character strong{font-size:28px;color:#713412}.battle-character small{margin-left:auto}.battle-history{max-height:340px;overflow:auto}.battle-history article{display:grid;gap:5px;padding:12px 0;border-bottom:1px solid #c4ab76}.battle-history time{font-size:12px}.battle-summary .section-head{flex-wrap:wrap;gap:12px}
+
+.companion-attack{display:block;padding:6px 8px;color:#70300e;font-weight:700;font-size:15px}.companion-hp{white-space:normal}
