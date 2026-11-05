@@ -196,3 +196,5 @@ details.appearance-editor>summary{cursor:pointer;font-weight:700;color:#61451f;f
 @media(max-width:650px){.combat-row .combat-identity{grid-template-columns:minmax(0,1fr) auto;gap:7px}.combat-identity .combat-note{grid-column:1/-1;grid-row:auto}.combat-input-strip{gap:9px}.combat-identity .combat-note textarea{min-height:3rem}}
 
 .battle-pet-badge{display:flex;gap:6px;align-items:center;text-align:left;max-width:12rem;font-size:12px;margin:4px 0;overflow-wrap:anywhere}.battle-pet-badge .companion-art{flex:0 0 36px;width:36px;height:36px;margin:0}.battle-pet-badge small{display:block}.combat-input-strip .combat-damage.with-sneak{grid-template-columns:repeat(3,minmax(0,6rem))}.companion-hit{max-width:20rem}.combat-row-hp{min-width:0}@media(max-width:650px){.battle-pet-badge{max-width:9rem}.combat-damage.with-sneak{max-width:100%}}
+
+.qi-vessel .qi-lights{display:block;margin:6px 0;color:#17677c;letter-spacing:.08em}.qi-actions{display:flex;gap:6px;flex-wrap:wrap}.qi-actions button{padding:5px 9px}

@@ -94,7 +94,7 @@ function bindDescription(form){const editor=form.querySelector('#itemDescription
 
 // Upgrades belong to each holding, never the shared item template.
 const itemBonusFields=[['enhancement','強化'],['damageBonus','傷害加值'],['physicalDefense','物理防禦'],['equipmentMagicDefense','魔法防禦']];
-function validItemBonuses(i){return !!i&&itemBonusFields.every(([k])=>i[k]===undefined||typeof i[k]==='string'&&/^[+-]?\d{1,6}$|^$/.test(i[k]))}
+function validItemBonuses(i){return !!i&&(i.storedQi===undefined||Number.isInteger(i.storedQi)&&i.storedQi>=0&&i.storedQi<=4)&&itemBonusFields.every(([k])=>i[k]===undefined||typeof i[k]==='string'&&/^[+-]?\d{1,6}$|^$/.test(i[k]))}
 function normalizeItemBonus(value){if(!value)return '';return String(Number(value.replace('−','-')))}
 function signedBonus(value){return value===''||value===undefined?'—':Number(value)>=0?'+'+Number(value):String(Number(value))}
 function itemBonuses(i){const category=categoryName(i.category);if(!['裝備','附魂'].includes(category))return '';const weapon=['武器','副武器'].includes(i.equipmentType);return `${elementBadge(i)}<div class="item-bonuses">${itemBonusFields.filter(([k])=>bonusApplies(i.category,i.equipmentType,k)).map(([k,label])=>`<span><small>${label}</small><b>${k==='enhancement'||k==='damageBonus'?signedBonus(i[k]):esc(i[k]||'—')}</b></span>`).join('')}</div>`}

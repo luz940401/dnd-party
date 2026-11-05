@@ -8,7 +8,19 @@ function resourceLevel(c){const v=String(c?.profile?.level||'').trim();return /^
 function resourcePools(c){const cls=resourceClass(c),level=resourceLevel(c);if(!level)return [];if(cls==='monk')return level<2?[]:[{key:'focus',label:'氣點',max:level}];if(!['wizard','cleric','ranger','bard'].includes(cls))return [];const slots=fullCasterSlots[cls==='ranger'?Math.ceil(level/2):level].map((max,i)=>({key:'slot'+(i+1),label:(i+1)+' 環',max}));if(cls==='bard')slots.push({key:'inspiration',label:'吟遊激勵 D'+(level>=15?12:level>=10?10:level>=5?8:6),max:Math.max(1,Math.min(20,Number(abilityModifier(c.abilities?.charisma?.score,c.abilities?.charisma?.modifierUnlocked))||0))});return slots}
 function validResources(c){const r=c.resourceSpent;return (c.resourceClass===undefined||resourceClasses.some(([k])=>k===c.resourceClass))&&(r===undefined||r&&typeof r==='object'&&!Array.isArray(r)&&Object.entries(r).every(([k,v])=>/^(focus|inspiration|slot[1-9])$/.test(k)&&Array.isArray(v)&&v.length<=20&&new Set(v).size===v.length&&v.every(n=>Number.isInteger(n)&&n>=0&&n<20)))}
 function resourceClassForm(c){return `<label>戰鬥資源職業<select name="resourceClass">${resourceClasses.map(([k,label])=>`<option value="${k}" ${resourceClass(c)===k?'selected':''}>${label}</option>`).join('')}</select><small>依 LV. 等級（1–20）自動計算；目前支援選單內的單一職業。</small></label>`}
-function resourcePanel(c){if(!resourcePools(c).length)return '';const cls=resourceClass(c),pools=resourcePools(c),label=resourceClasses.find(([k])=>k===cls)?.[1]||'未設定';return `<section class="combat-resources" data-resource-owner="${esc(c.id)}"><div class="section-head"><h3>✦ 戰鬥資源</h3><span class="tag">${esc(label)}${resourceLevel(c)?' · LV.'+resourceLevel(c):''}</span></div><div class="resource-pools">${pools.map(p=>{const spent=c.resourceSpent?.[p.key]||[],remaining=p.max-spent.filter(n=>n<p.max).length;return `<div class="resource-pool"><div><strong>${p.label}</strong><small>${remaining} / ${p.max}</small></div><div class="resource-lights">${Array.from({length:p.max},(_,i)=>`<button class="resource-light ${spent.includes(i)?'spent':'lit'}" data-resource="${p.key}" data-pip="${i}" aria-pressed="${!spent.includes(i)}" aria-label="${esc(c.name)} ${p.label} 第 ${i+1} 格：${spent.includes(i)?'已消耗，點選恢復':'可用，點選消耗'}" ${dm?'':'disabled'}><span aria-hidden="true">${spent.includes(i)?'○':'◆'}</span></button>`).join('')}</div></div>`}).join('')||`<p>${!cls?'請編輯角色，選擇戰鬥資源職業。':!resourceLevel(c)?'請編輯角色，填入 1–20 的 LV. 等級。':cls==='assassin'?'刺客不使用戰鬥資源。':'武僧於 2 級開始取得氣點。'}</p>`}</div><small>亮燈＝可用，暗燈＝已消耗。${dm?'點一下消耗，再點恢復；每次操作自動儲存。':'由 DM 操作，玩家可即時查看。'}${cls==='monk'?' 氣點可於短休或長休恢復。':''}</small>${typeof bardControls==='function'?bardControls(c):''}</section>`}
+const qiVesselCapacity=4;
+function equippedQiVessel(c,s){
+ const id=c?.equipment?.offhand;
+ if(!id)return null;
+ return s.items.find(i=>i.id===id&&i.owner===c.id&&i.qty>0&&templateKey(i)==='四象崁晶甲')||null;
+}
+function qiVesselPanel(c,item){
+ if(!item)return '';
+ const count=item.storedQi??0;
+ const lights=Array.from({length:qiVesselCapacity},(_,i)=>i<count?'◆':'◇').join(' ');
+ return `<div class="resource-pool qi-vessel"><div><strong>四象崁晶甲 · 儲氣</strong><small>${count} / ${qiVesselCapacity}</small></div><span class="qi-lights" aria-hidden="true">${lights}</span>${dm?`<div class="qi-actions"><button type="button" data-qi-action="store" data-qi-item="${esc(item.id)}" ${count===qiVesselCapacity||availableFocusIndex(c)===undefined?'disabled':''} title="消耗角色 1 點氣，存入這件副武器">存入 1 氣</button><button type="button" data-qi-action="spend" data-qi-item="${esc(item.id)}" ${count===0?'disabled':''}>使用 1 氣</button></div>`:''}</div>`;
+}
+function resourcePanel(c){const cls=resourceClass(c),pools=resourcePools(c),label=resourceClasses.find(([k])=>k===cls)?.[1]||'未設定',item=equippedQiVessel(c,state);if(!pools.length&&!item)return '';return `<section class="combat-resources" data-resource-owner="${esc(c.id)}"><div class="section-head"><h3>✦ 戰鬥資源</h3><span class="tag">${esc(label)}${resourceLevel(c)?' · LV.'+resourceLevel(c):''}</span></div><div class="resource-pools">${pools.map(p=>{const spent=c.resourceSpent?.[p.key]||[],remaining=p.max-spent.filter(n=>n<p.max).length;return `<div class="resource-pool"><div><strong>${p.label}</strong><small>${remaining} / ${p.max}</small></div><div class="resource-lights">${Array.from({length:p.max},(_,i)=>`<button class="resource-light ${spent.includes(i)?'spent':'lit'}" data-resource="${p.key}" data-pip="${i}" aria-pressed="${!spent.includes(i)}" aria-label="${esc(c.name)} ${p.label} 第 ${i+1} 格：${spent.includes(i)?'已消耗，點選恢復':'可用，點選消耗'}" ${dm?'':'disabled'}><span aria-hidden="true">${spent.includes(i)?'○':'◆'}</span></button>`).join('')}</div></div>`}).join('')}${qiVesselPanel(c,item)}</div>${pools.length?`<small>亮燈＝可用，暗燈＝已消耗。${dm?'點一下消耗，再點恢復；每次操作自動儲存。':'由 DM 操作，玩家可即時查看。'}${cls==='monk'?' 氣點可於短休或長休恢復。':''}</small>`:''}${typeof bardControls==='function'?bardControls(c):''}</section>`}
 function toggleResource(next,id,key,index){const c=next.characters.find(c=>c.id===id),pool=c&&resourcePools(c).find(p=>p.key===key);if(!pool||!Number.isInteger(index)||index<0||index>=pool.max)return false;c.resourceSpent??={};const spent=c.resourceSpent[key]||[];c.resourceSpent[key]=spent.includes(index)?spent.filter(n=>n!==index):[...spent,index];return true}
 function longRestSkillMax(t){if(!t||t.type==='寄宿/附身/靈魂聯繫/靈體'||!['長休','長休恢復','長休後恢復'].includes(t.recovery?.trim()))return null;const match=t.uses?.trim().match(/^(?:每日\s*)?(\d{1,6})\s*(?:次)?$/);return match?Number(match[1]):null}
 function longRestPlan(s){const next=structuredClone(s),notes=[];let skills=0;for(const c of next.characters){const hp=hpValues(c);if(/^\d{1,6}$/.test(String(hp.max)))c.profile={...c.profile,hp:String(hp.max),hpMax:String(hp.max)};else notes.push(c.name+'：未設定最大 HP，HP 保留原值');c.resourceSpent={};for(const entry of c.skills||[]){const t=(next.skillLibrary||[]).find(t=>t.id===entry.skillId),max=longRestSkillMax(t);if(max!==null){entry.remaining=String(max);skills++}else if(t&&['長休','長休恢復','長休後恢復'].includes(t.recovery?.trim())&&t.type!=='寄宿/附身/靈魂聯繫/靈體')notes.push(c.name+'・'+t.name+'：使用次數不是固定數字，保留原值')}}return {next,notes,skills}}
@@ -16,3 +28,43 @@ let resourceBusy=false;
 async function saveResourceToggle(button){if(!dm||resourceBusy)return;const id=button.closest('[data-resource-owner]').dataset.resourceOwner,key=button.dataset.resource,index=Number(button.dataset.pip),next=structuredClone(state);if(!toggleResource(next,id,key,index))return;resourceBusy=true;document.querySelectorAll('[data-resource],[data-long-rest]').forEach(b=>b.disabled=true);try{if(await persist(next)){const c=state.characters.find(c=>c.id===id),panel=document.querySelector('[data-resource-owner="'+id+'"]');if(c&&panel)panel.outerHTML=resourcePanel(c);toast('戰鬥資源已儲存')}}finally{resourceBusy=false;document.querySelectorAll('[data-resource],[data-long-rest]').forEach(b=>b.disabled=!dm)}}
 function confirmLongRest(){if(!dm||resourceBusy)return;const plan=longRestPlan(state);modal(`<h2>確認全隊長休？</h2><p>將恢復 ${state.characters.length} 位角色的 HP、全部法術位與氣點，以及 ${plan.skills} 個已標示長休恢復的技能。</p><p>技能的「恢復條件」填寫「長休」、「長休恢復」或「長休後恢復」，「使用次數」填寫固定數量，例如「3 次」。其他條件與靈體狀態保持原樣。</p>${plan.notes.length?'<ul>'+plan.notes.map(n=>'<li>'+esc(n)+'</li>').join('')+'</ul>':''}<div class="actions"><button data-close>取消</button><button class="primary" id="confirmPartyRest">確認，全隊長休</button></div>`);$('#confirmPartyRest').onclick=async e=>{if(!dm||resourceBusy)return;resourceBusy=true;const b=e.currentTarget;b.disabled=true;try{if(await persist(longRestPlan(state).next)){close();render();toast('全隊長休完成，資源與 HP 已恢復')}}finally{resourceBusy=false;b.disabled=false}}}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-resource],[data-long-rest]');if(!b||!dm)return;if(b.hasAttribute('data-long-rest'))confirmLongRest();else saveResourceToggle(b)});
+async function useQiVessel(button){
+ if(!dm||resourceBusy)return;
+ const owner=button.closest('[data-resource-owner]').dataset.resourceOwner;
+ const next=structuredClone(state);
+ resourceBusy=true;
+ try{
+  changeStoredQi(next,owner,button.dataset.qiItem,button.dataset.qiAction);
+  if(await persist(next)){
+   const character=state.characters.find(c=>c.id===owner);
+   const panel=button.closest('[data-resource-owner]');
+   if(panel.isConnected)panel.outerHTML=resourcePanel(character);
+   toast('儲氣已更新');
+  }
+ }catch(err){toast(err.message)}finally{resourceBusy=false}
+}
+document.addEventListener('click',event=>{
+ const button=event.target.closest('[data-qi-action]');
+ if(button)useQiVessel(button);
+});
+function availableFocusIndex(c){
+ const pool=resourcePools(c).find(p=>p.key==='focus');
+ const spent=c.resourceSpent?.focus||[];
+ return pool ? Array.from({length:pool.max},(_,i)=>i).find(i=>!spent.includes(i)) : undefined;
+}
+function changeStoredQi(next,owner,itemId,action){
+ const c=next.characters.find(c=>c.id===owner);
+ const item=equippedQiVessel(c,next);
+ if(!item||item.id!==itemId)throw Error('請先將四象崁晶甲裝備在副武器欄。');
+ const count=item.storedQi??0;
+ if(action==='spend'){
+  if(count===0)throw Error('這件裝備沒有儲氣。');
+  item.storedQi=count-1;
+ }else if(action==='store'){
+  if(count>=qiVesselCapacity)throw Error('儲氣已滿。');
+  const focus=availableFocusIndex(c);
+  if(focus===undefined)throw Error('角色沒有可存入的氣點。');
+  toggleResource(next,owner,'focus',focus);
+  item.storedQi=count+1;
+ }else throw Error('未知的儲氣操作。');
+}
