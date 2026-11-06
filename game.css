@@ -215,3 +215,29 @@ details.appearance-editor>summary{cursor:pointer;font-weight:700;color:#61451f;f
 #spiritImageEditor{min-width:0;border:0;padding:0}
 .spirit-edit-preview{display:block;max-width:100%;max-height:55vh;object-fit:contain;margin:12px auto}
 @media(max-width:600px){.combat-spirit-references button{max-width:100%;white-space:normal}.spirit-zoom{flex-wrap:wrap}.spirit-image-scroll{max-height:55vh}}
+/* Document reader keeps the controls compact and reserves space for the A4 chart. */
+.spirit-document header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.spirit-document header h2{margin:0;font-size:22px}
+.spirit-document-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.spirit-document-tools button,.spirit-document header button{padding:7px 12px;min-height:38px}
+.spirit-document-tools button[aria-pressed=true]{background:#d8bf89;border-color:#896229}
+.spirit-document-tools label{display:flex;align-items:center;gap:8px;margin:0 0 0 auto;font-size:13px}
+.spirit-document-tools input{width:140px;padding:0}
+.spirit-document-tools output{min-width:52px}
+.spirit-document .spirit-document-page{height:calc(100dvh - 210px);max-height:none;min-height:240px;background:#746957;overscroll-behavior:contain}
+.spirit-document-page #spiritFullImage{width:min(100%,900px);height:auto;margin:0 auto;max-width:none;box-shadow:0 2px 14px #30271966}
+.spirit-document-page.whole-page{display:flex;justify-content:center;align-items:center}
+.spirit-document-page.whole-page #spiritFullImage{width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain}
+.spirit-document-description{margin-top:8px}.spirit-document-edit{padding:5px 10px;margin-top:8px;font-size:12px}
+@media(max-width:600px){.spirit-document header h2{font-size:18px}.spirit-document-tools{gap:6px}.spirit-document-tools button{font-size:12px;padding:6px 9px}.spirit-document-tools label{margin-left:0;width:100%}.spirit-document-tools input{flex:1;max-width:240px}.spirit-document .spirit-document-page{height:calc(100dvh - 250px);min-height:200px}}
+#modal:has(.spirit-document){height:calc(100dvh - 24px);overflow:hidden;padding:18px}
+#modalBody:has(.spirit-document){height:100%}
+.spirit-document{height:100%;display:flex;flex-direction:column;min-height:0}
+.spirit-document header{padding:0;background:none;border:0;position:static;flex:none}
+.spirit-document-tools{flex:none}
+.spirit-document-tools label{white-space:nowrap}
+#modal .spirit-document-tools input{width:140px;flex:none}
+.spirit-document .spirit-document-page{flex:1;min-height:0;height:auto}
+.spirit-document-description{flex:none;max-height:20vh;overflow:auto}
+.spirit-document-edit{align-self:flex-end;flex:none}
+#modal #spiritZoom{width:140px;max-width:140px;min-width:80px;padding:0;flex:0 1 140px}

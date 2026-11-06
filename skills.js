@@ -96,12 +96,22 @@ function combatSpiritReferences(c){
 function viewSpiritReference(id){
  const t=(state.skillLibrary||[]).find(t=>t.id===id&&t.type===spiritType);
  if(!t)return;
- modal(`<h2>${esc(t.name)}</h2><div class="actions"><button data-close>關閉</button>${dm?`<button data-spirit-image-edit="${esc(t.id)}">設定能力一覽圖</button>`:''}</div>${t.overviewImage?`<label class="spirit-zoom">圖片縮放 <input id="spiritZoom" type="range" min="100" max="800" step="25" value="100"><output id="spiritZoomValue">100%</output></label><div class="actions"><button id="spiritFitWidth">符合寬度</button><button id="spiritOriginalSize">原始大小</button></div><div class="spirit-image-scroll"><img id="spiritFullImage" src="${esc(t.overviewImage)}" alt="${esc(t.name)}能力一覽圖"></div>`:'<p>尚未上傳能力一覽圖。</p>'}<div class="skill-effect">${conditionMarkup(formatDescription(t.description))}</div>`,'grant');
+ modal(`<section class="spirit-document"><header><h2>${esc(t.name)}</h2><button data-close>關閉</button></header>${t.overviewImage?`<div class="spirit-document-tools"><button id="spiritReadMode" aria-pressed="true">A4 清晰閱讀</button><button id="spiritWholePage" aria-pressed="false">整頁預覽</button><button id="spiritOriginalSize">原始大小</button><label>縮放 <input aria-label="圖片縮放" id="spiritZoom" type="range" min="100" max="800" step="25" value="100"><output id="spiritZoomValue">100%</output></label></div><div class="spirit-image-scroll spirit-document-page" tabindex="0" aria-label="能力一覽表，可捲動閱讀"><img id="spiritFullImage" src="${esc(t.overviewImage)}" alt="${esc(t.name)}能力一覽圖"></div>`:'<p>尚未上傳能力一覽圖。</p>'}${t.description?`<details class="spirit-document-description"><summary>文字說明</summary><div class="skill-effect">${conditionMarkup(formatDescription(t.description))}</div></details>`:''}${dm?`<button class="spirit-document-edit" data-spirit-image-edit="${esc(t.id)}">設定能力一覽圖</button>`:''}</section>`,'grant');
  if(!t.overviewImage)return;
- $('#spiritFitWidth').onclick=()=>{$('#spiritFullImage').style.width='100%';$('#spiritZoom').value='100';$('#spiritZoomValue').textContent='100%'};
- $('#spiritOriginalSize').onclick=()=>{const img=$('#spiritFullImage');if(!img.naturalWidth)return;img.style.width=img.naturalWidth+'px';$('#spiritZoomValue').textContent='原始大小'};
+ const img=$('#spiritFullImage'),viewport=img.parentElement;
+ const setMode=mode=>{
+  viewport.classList.toggle('whole-page',mode==='whole');
+  img.style.width='';
+  $('#spiritReadMode').setAttribute('aria-pressed',String(mode==='read'));
+  $('#spiritWholePage').setAttribute('aria-pressed',String(mode==='whole'));
+  viewport.scrollTop=viewport.scrollLeft=0;
+ };
+ $('#spiritReadMode').onclick=()=>{setMode('read');$('#spiritZoom').value='100';$('#spiritZoomValue').textContent='100%'};
+ $('#spiritWholePage').onclick=()=>{setMode('whole');$('#spiritZoomValue').textContent='整頁'};
+ $('#spiritOriginalSize').onclick=()=>{if(!img.naturalWidth)return;setMode('original');img.style.width=img.naturalWidth+'px';$('#spiritZoomValue').textContent='原始大小'};
  $('#spiritZoom').oninput=e=>{
-  $('#spiritFullImage').style.width=e.target.value+'%';
+  setMode('zoom');
+  img.style.width=Math.min(900,viewport.clientWidth)*Number(e.target.value)/100+'px';
   $('#spiritZoomValue').textContent=e.target.value+'%';
  };
 }
