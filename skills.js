@@ -22,7 +22,7 @@ function validSkills(s){
  if(!s)return false;
  const library=s.skillLibrary===undefined?[]:s.skillLibrary;
  if(!Array.isArray(library)||library.length>2000||new Set(library.map(t=>t?.id)).size!==library.length)return false;
- if(!library.every(t=>t&&typeof t.id==='string'&&t.id.length>0&&t.id.length<=200&&Object.entries(skillTextFields).every(([k,max])=>typeof t[k]==='string'&&t[k].length<=max)&&t.name.trim()&&(skillTypes.includes(t.type)||['主動技能','專屬技能'].includes(t.type))&&['主動施放','被動生效'].includes(t.activation)&&imageValid(t.image)&&(t.overviewImage===undefined||imageValid(t.overviewImage))&&validImageFrame(t)&&(t.note===undefined||typeof t.note==='string'&&t.note.length<=300)&&(t.rarity===undefined||['',...rarities].includes(t.rarity))&&(t.resourceType===undefined||['none','spell','ki'].includes(t.resourceType))&&(t.kiCost===undefined||t.kiCost===''||typeof t.kiCost==='string'&&/^(0|[1-9][0-9]?)$/.test(t.kiCost))&&(t.spellLevel===undefined||t.spellLevel===''||typeof t.spellLevel==='string'&&/^[0-9]$/.test(t.spellLevel))&&(t.actionType===undefined||['','動作','附贈動作','反應'].includes(t.actionType))&&(t.isCommon===undefined||typeof t.isCommon==='boolean')&&(t.archived===undefined||typeof t.archived==='boolean')))return false;
+ if(!library.every(t=>t&&typeof t.id==='string'&&t.id.length>0&&t.id.length<=200&&Object.entries(skillTextFields).every(([k,max])=>typeof t[k]==='string'&&t[k].length<=max)&&t.name.trim()&&(skillTypes.includes(t.type)||['主動技能','專屬技能'].includes(t.type))&&['主動施放','被動生效'].includes(t.activation)&&imageValid(t.image)&&(t.overviewImage===undefined||validSpiritOverview(t.overviewImage))&&validImageFrame(t)&&(t.note===undefined||typeof t.note==='string'&&t.note.length<=300)&&(t.rarity===undefined||['',...rarities].includes(t.rarity))&&(t.resourceType===undefined||['none','spell','ki'].includes(t.resourceType))&&(t.kiCost===undefined||t.kiCost===''||typeof t.kiCost==='string'&&/^(0|[1-9][0-9]?)$/.test(t.kiCost))&&(t.spellLevel===undefined||t.spellLevel===''||typeof t.spellLevel==='string'&&/^[0-9]$/.test(t.spellLevel))&&(t.actionType===undefined||['','動作','附贈動作','反應'].includes(t.actionType))&&(t.isCommon===undefined||typeof t.isCommon==='boolean')&&(t.archived===undefined||typeof t.archived==='boolean')))return false;
  return Array.isArray(s.characters)&&s.characters.every(c=>c&&(c.skills===undefined||Array.isArray(c.skills)&&new Set(c.skills.map(x=>x?.skillId)).size===c.skills.length&&c.skills.every(x=>x&&library.some(t=>t.id===x.skillId)&&typeof x.remaining==='string'&&x.remaining.length<=100)));
 }
 function skillActionBadge(t){return t.type!==spiritType&&t.actionType?`<span class="skill-action-tag">${esc(t.actionType)}</span>`:''}
@@ -77,6 +77,14 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-rarity-sor
 
 document.addEventListener('click',e=>{const b=e.target.closest('[data-skill-level-sort]');if(!b)return;e.preventDefault();e.stopPropagation();const key=b.dataset.skillLevelSort,on=skillLevelSort.get(key)!==false&&!categoryRaritySort.get(key);categoryRaritySort.delete(key);skillLevelSort.set(key,!on);const panel=document.querySelector('.skills-panel');if(panel)panel.outerHTML=skillsPanel()});
 
+const spiritOverviewMaxBytes=8*1024*1024;
+function validSpiritOverview(src){
+ if(imageValid(src))return true;
+ if(typeof src!=='string'||src.length>Math.ceil(spiritOverviewMaxBytes/3)*4+23||!/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(src))return false;
+ const encoded=src.slice(23);
+ const bytes=encoded.length*3/4-(encoded.endsWith('==')?2:encoded.endsWith('=')?1:0);
+ return encoded.length%4===0&&bytes<=spiritOverviewMaxBytes;
+}
 function spiritOverview(t){
  return `<div class="spirit-overview">${t.overviewImage?`<button class="spirit-overview-preview" data-spirit-view="${esc(t.id)}" aria-label="放大${esc(t.name)}能力一覽圖"><img src="${esc(t.overviewImage)}" alt="${esc(t.name)}能力一覽圖" loading="lazy"><span>點開放大能力一覽圖 ↗</span></button>`:''}${dm?`<button data-spirit-image-edit="${esc(t.id)}">${t.overviewImage?'更換／移除':'上傳'}能力一覽圖</button>`:''}</div>`;
 }
@@ -88,29 +96,39 @@ function combatSpiritReferences(c){
 function viewSpiritReference(id){
  const t=(state.skillLibrary||[]).find(t=>t.id===id&&t.type===spiritType);
  if(!t)return;
- modal(`<h2>${esc(t.name)}</h2><div class="actions"><button data-close>關閉</button>${dm?`<button data-spirit-image-edit="${esc(t.id)}">設定能力一覽圖</button>`:''}</div>${t.overviewImage?`<label class="spirit-zoom">圖片縮放 <input id="spiritZoom" type="range" min="100" max="250" step="25" value="100"><output id="spiritZoomValue">100%</output></label><div class="spirit-image-scroll"><img id="spiritFullImage" src="${esc(t.overviewImage)}" alt="${esc(t.name)}能力一覽圖"></div>`:'<p>尚未上傳能力一覽圖。</p>'}<div class="skill-effect">${conditionMarkup(formatDescription(t.description))}</div>`,'grant');
- if(t.overviewImage)$('#spiritZoom').oninput=e=>{
+ modal(`<h2>${esc(t.name)}</h2><div class="actions"><button data-close>關閉</button>${dm?`<button data-spirit-image-edit="${esc(t.id)}">設定能力一覽圖</button>`:''}</div>${t.overviewImage?`<label class="spirit-zoom">圖片縮放 <input id="spiritZoom" type="range" min="100" max="800" step="25" value="100"><output id="spiritZoomValue">100%</output></label><div class="actions"><button id="spiritFitWidth">符合寬度</button><button id="spiritOriginalSize">原始大小</button></div><div class="spirit-image-scroll"><img id="spiritFullImage" src="${esc(t.overviewImage)}" alt="${esc(t.name)}能力一覽圖"></div>`:'<p>尚未上傳能力一覽圖。</p>'}<div class="skill-effect">${conditionMarkup(formatDescription(t.description))}</div>`,'grant');
+ if(!t.overviewImage)return;
+ $('#spiritFitWidth').onclick=()=>{$('#spiritFullImage').style.width='100%';$('#spiritZoom').value='100';$('#spiritZoomValue').textContent='100%'};
+ $('#spiritOriginalSize').onclick=()=>{const img=$('#spiritFullImage');if(!img.naturalWidth)return;img.style.width=img.naturalWidth+'px';$('#spiritZoomValue').textContent='原始大小'};
+ $('#spiritZoom').oninput=e=>{
   $('#spiritFullImage').style.width=e.target.value+'%';
   $('#spiritZoomValue').textContent=e.target.value+'%';
  };
 }
 async function decodeSpiritOverview(file){
- if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>8*1024*1024)throw Error('請選擇 8 MB 以內的 JPG、PNG 或 WebP。');
+ if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>20*1024*1024)throw Error('請選擇 20 MB 以內的 JPG、PNG 或 WebP。');
  const bitmap=await createImageBitmap(file);
  try{
   if(bitmap.width<16||bitmap.height<16||bitmap.width*bitmap.height>40000000)throw Error('圖片需至少 16 像素，且不超過 4,000 萬像素。');
+  // Preserve JPEG originals when they already fit the storage limit.
+  if(file.type==='image/jpeg'&&file.size<=spiritOverviewMaxBytes)return await new Promise((resolve,reject)=>{
+   const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('無法讀取圖片，請重新選擇。'));reader.readAsDataURL(file);
+  });
   const canvas=document.createElement('canvas');
-  for(const edge of [3200,2800,2400,2000,1600]){
-   const scale=Math.min(1,edge/Math.max(bitmap.width,bitmap.height));
+  const safeScale=Math.min(1,16384/Math.max(bitmap.width,bitmap.height));
+  for(const factor of [1,.85,.7,.5]){
+   const scale=safeScale*factor;
    canvas.width=Math.max(1,Math.round(bitmap.width*scale));
    canvas.height=Math.max(1,Math.round(bitmap.height*scale));
    const ctx=canvas.getContext('2d');
    ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
    ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
-   const result=canvas.toDataURL('image/jpeg',.9);
-   if(result.length<700000)return result;
+   for(const quality of [.94,.88,.8]){
+    const result=canvas.toDataURL('image/jpeg',quality);
+    if(validSpiritOverview(result))return result;
+   }
   }
-  throw Error('圖片內容過大，請先縮小圖片後再上傳。');
+  throw Error('圖片轉換失敗，請改用 JPG 或 PNG 再試一次。');
  }finally{bitmap.close()}
 }
 function editSpiritOverview(id){
@@ -118,7 +136,7 @@ function editSpiritOverview(id){
  const t=(state.skillLibrary||[]).find(t=>t.id===id&&t.type===spiritType);
  if(!t)return;
  let image=t.overviewImage||'',busy=false;
- modal(`<h2>${esc(t.name)} · 能力一覽圖</h2><p>獨立於卡片圖片，保留完整長寬比例。共用此靈體的角色會同步看到更新。</p><fieldset id="spiritImageEditor"><label class="upload-button">選擇能力圖片<input id="spiritOverviewFile" type="file" accept="image/jpeg,image/png,image/webp"></label><p id="spiritOverviewStatus" role="status">JPG／PNG／WebP，最大 8 MB，長圖可上下捲動閱讀。</p><div id="spiritOverviewPreview"></div><div class="actions"><button id="clearSpiritOverview">移除一覽圖</button><button data-close>取消</button><button id="saveSpiritOverview" class="primary">儲存一覽圖</button></div></fieldset>`,'grant');
+ modal(`<h2>${esc(t.name)} · 能力一覽圖</h2><p>獨立於卡片圖片，保留完整長寬比例。共用此靈體的角色會同步看到更新。</p><fieldset id="spiritImageEditor"><label class="upload-button">選擇能力圖片<input id="spiritOverviewFile" type="file" accept="image/jpeg,image/png,image/webp"></label><p id="spiritOverviewStatus" role="status">JPG／PNG／WebP，來源最大 20 MB、4,000 萬像素。保留完整構圖，必要時自動壓縮至 8 MB；長圖可捲動並以原始大小閱讀。</p><div id="spiritOverviewPreview"></div><div class="actions"><button id="clearSpiritOverview">移除一覽圖</button><button data-close>取消</button><button id="saveSpiritOverview" class="primary">儲存一覽圖</button></div></fieldset>`,'grant');
  const panel=$('#spiritImageEditor'),status=$('#spiritOverviewStatus'),save=$('#saveSpiritOverview');
  const preview=()=>{$('#spiritOverviewPreview').innerHTML=image?`<img class="spirit-edit-preview" src="${esc(image)}" alt="能力一覽圖預覽">`:'<p>尚無一覽圖</p>'};
  preview();
