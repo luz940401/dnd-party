@@ -200,3 +200,18 @@ details.appearance-editor>summary{cursor:pointer;font-weight:700;color:#61451f;f
 .qi-vessel .qi-lights{display:block;margin:6px 0;color:#17677c;letter-spacing:.08em}.qi-actions{display:flex;gap:6px;flex-wrap:wrap}.qi-actions button{padding:5px 9px}
 
 #bulkSkills{min-width:0;border:0;padding:0}#bulkSkills input[type=search]{width:100%}.bulk-select-bar,.bulk-skill-list label{display:flex;align-items:center;gap:10px}.bulk-select-bar{justify-content:space-between;margin:10px 0}.bulk-select-bar label{display:flex;align-items:center;gap:6px}.bulk-skill-list{max-height:45vh;overflow:auto}.bulk-skill-list label{padding:8px;border-bottom:1px solid #c9ad78;cursor:pointer}.bulk-skill-list strong{min-width:0;overflow-wrap:anywhere}.bulk-skill-list small{margin-left:auto;white-space:nowrap}#bulkSkills input[type=checkbox]{width:18px;height:18px;flex:none}.bulk-skill-list label:has(:checked){background:#e2cfa080}
+.spirit-overview{display:grid;gap:10px;margin-bottom:12px}
+.spirit-overview-preview{display:grid;gap:8px;width:100%;padding:8px}
+.spirit-overview-preview img{display:block;max-width:100%;width:auto;max-height:260px;object-fit:contain;margin:auto}
+.spirit-overview-preview span{font-size:13px}
+.combat-spirit-references{padding:10px 0;border-top:1px solid #c9ad78;margin-top:12px}
+.combat-spirit-references>div{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.combat-spirit-references button{padding:7px 12px;text-align:left}
+.combat-spirit-references button span{font-size:12px;opacity:.8}
+.spirit-zoom{display:flex;align-items:center;gap:12px;margin:12px 0}
+.spirit-zoom input{max-width:240px;min-width:80px}
+.spirit-image-scroll{overflow:auto;max-height:55vh;background:#fff;border:1px solid #b7955c}
+#spiritFullImage{display:block;width:100%;max-width:none;height:auto}
+#spiritImageEditor{min-width:0;border:0;padding:0}
+.spirit-edit-preview{display:block;max-width:100%;max-height:55vh;object-fit:contain;margin:12px auto}
+@media(max-width:600px){.combat-spirit-references button{max-width:100%;white-space:normal}.spirit-zoom{flex-wrap:wrap}.spirit-image-scroll{max-height:55vh}}

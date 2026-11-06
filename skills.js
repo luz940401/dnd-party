@@ -22,12 +22,12 @@ function validSkills(s){
  if(!s)return false;
  const library=s.skillLibrary===undefined?[]:s.skillLibrary;
  if(!Array.isArray(library)||library.length>2000||new Set(library.map(t=>t?.id)).size!==library.length)return false;
- if(!library.every(t=>t&&typeof t.id==='string'&&t.id.length>0&&t.id.length<=200&&Object.entries(skillTextFields).every(([k,max])=>typeof t[k]==='string'&&t[k].length<=max)&&t.name.trim()&&(skillTypes.includes(t.type)||['主動技能','專屬技能'].includes(t.type))&&['主動施放','被動生效'].includes(t.activation)&&imageValid(t.image)&&validImageFrame(t)&&(t.note===undefined||typeof t.note==='string'&&t.note.length<=300)&&(t.rarity===undefined||['',...rarities].includes(t.rarity))&&(t.resourceType===undefined||['none','spell','ki'].includes(t.resourceType))&&(t.kiCost===undefined||t.kiCost===''||typeof t.kiCost==='string'&&/^(0|[1-9][0-9]?)$/.test(t.kiCost))&&(t.spellLevel===undefined||t.spellLevel===''||typeof t.spellLevel==='string'&&/^[0-9]$/.test(t.spellLevel))&&(t.actionType===undefined||['','動作','附贈動作','反應'].includes(t.actionType))&&(t.isCommon===undefined||typeof t.isCommon==='boolean')&&(t.archived===undefined||typeof t.archived==='boolean')))return false;
+ if(!library.every(t=>t&&typeof t.id==='string'&&t.id.length>0&&t.id.length<=200&&Object.entries(skillTextFields).every(([k,max])=>typeof t[k]==='string'&&t[k].length<=max)&&t.name.trim()&&(skillTypes.includes(t.type)||['主動技能','專屬技能'].includes(t.type))&&['主動施放','被動生效'].includes(t.activation)&&imageValid(t.image)&&(t.overviewImage===undefined||imageValid(t.overviewImage))&&validImageFrame(t)&&(t.note===undefined||typeof t.note==='string'&&t.note.length<=300)&&(t.rarity===undefined||['',...rarities].includes(t.rarity))&&(t.resourceType===undefined||['none','spell','ki'].includes(t.resourceType))&&(t.kiCost===undefined||t.kiCost===''||typeof t.kiCost==='string'&&/^(0|[1-9][0-9]?)$/.test(t.kiCost))&&(t.spellLevel===undefined||t.spellLevel===''||typeof t.spellLevel==='string'&&/^[0-9]$/.test(t.spellLevel))&&(t.actionType===undefined||['','動作','附贈動作','反應'].includes(t.actionType))&&(t.isCommon===undefined||typeof t.isCommon==='boolean')&&(t.archived===undefined||typeof t.archived==='boolean')))return false;
  return Array.isArray(s.characters)&&s.characters.every(c=>c&&(c.skills===undefined||Array.isArray(c.skills)&&new Set(c.skills.map(x=>x?.skillId)).size===c.skills.length&&c.skills.every(x=>x&&library.some(t=>t.id===x.skillId)&&typeof x.remaining==='string'&&x.remaining.length<=100)));
 }
 function skillActionBadge(t){return t.type!==spiritType&&t.actionType?`<span class="skill-action-tag">${esc(t.actionType)}</span>`:''}
 function skillImage(t){return `<span class="skill-icon">${t.image?`<img src="${esc(t.image)}" style="${imageFrameStyle(t)}" alt="">`:esc(t.icon||'✦')}</span>`}
-function skillBody(t){if(t.type===spiritType)return `<div class="skill-effect">${conditionMarkup(formatDescription(t.description))||'尚未填寫描述'}</div>`;return `<div class="skill-effect">${conditionMarkup(formatDescription(t.description))||'尚未填寫效果'}</div><dl class="skill-facts">${[['施放方式',t.type==='被動技能'?'被動生效':'主動施放'],['條件／消耗',t.conditions],['使用次數',t.uses],['恢復條件',t.recovery]].filter(([,v])=>v).map(([label,v])=>`<div><dt>${label}</dt><dd>${conditionText(v)}</dd></div>`).join('')}</dl>`}
+function skillBody(t){if(t.type===spiritType)return `${spiritOverview(t)}<div class="skill-effect">${conditionMarkup(formatDescription(t.description))||'尚未填寫描述'}</div>`;return `<div class="skill-effect">${conditionMarkup(formatDescription(t.description))||'尚未填寫效果'}</div><dl class="skill-facts">${[['施放方式',t.type==='被動技能'?'被動生效':'主動施放'],['條件／消耗',t.conditions],['使用次數',t.uses],['恢復條件',t.recovery]].filter(([,v])=>v).map(([label,v])=>`<div><dt>${label}</dt><dd>${conditionText(v)}</dd></div>`).join('')}</dl>`}
 function skillOpen(key,fallback=false){return skillOpenState.has(key)?skillOpenState.get(key):fallback}
 function skillCard(t,entry,characterId,index,total){if(t.type===spiritType)return spiritCard(t,entry,characterId,index,total);const key=characterId+':'+t.id;return `<details class="skill-card" data-sort-skill="${esc(t.id)}" data-sort-character="${esc(characterId)}" data-sort-type="${esc(t.type)}" data-skill-open="${esc(key)}" ${skillOpen(key)?'open':''}><summary>${skillLevelBadge(t)}<span class="skill-row-copy"><strong>${esc(t.name)}${skillActionBadge(t)}</strong><small>${conditionText(t.summary||'點選查看技能效果')}</small>${entry.remaining?`<span class="skill-remaining">${t.type===spiritType?'目前狀態':'剩餘次數'}：${esc(entry.remaining)}</span>`:''}</span>${dm&&!categoryRaritySort.get('skill:'+characterId+':'+t.type)&&!levelSorted('skill:'+characterId+':'+t.type,t.type)?`<span class="skill-sort-controls"><span class="skill-drag-handle" title="拖曳以調整同分類技能順序" aria-hidden="true">⠿</span><button type="button" data-skill-shift="-1" aria-label="上移${esc(t.name)}" ${index===0?'disabled':''}>↑</button><button type="button" data-skill-shift="1" aria-label="下移${esc(t.name)}" ${index===total-1?'disabled':''}>↓</button></span>`:''}<span class="skill-chevron" aria-hidden="true">⌄</span></summary><div class="skill-card-body">${skillBody(t)}${dm?`<div class="skill-actions"><button data-skill-edit="${esc(t.id)}">${t.type===spiritType?'編輯內容':'編輯技能'}</button><button data-skill-instance="${esc(t.id)}" data-skill-character="${esc(characterId)}">${t.type===spiritType?'狀態／移除':'次數／移除'}</button></div>`:''}</div></details>`}
 function skillsPanel(){const c=state.characters.find(c=>c.id===owner);if(!c)return '';const entries=(c.skills||[]).map(e=>({entry:e,t:(state.skillLibrary||[]).find(t=>t.id===e.skillId)})).filter(x=>x.t);return `<section class="panel skills-panel"><div class="section-head"><div><div class="eyebrow">CHARACTER SKILLS</div><h2>角色技能與靈體</h2></div>${dm?`<button data-skill-library="${esc(c.id)}">＋ 技能／靈體資料庫</button>`:`<span class="tag">${entries.length} 項</span>`}</div><p class="skill-help">技能前方顯示戲法、環階或氣的格數，預設依消耗數字由小到大排列；未設定排最後。點「消耗 ↑」可切回原始順序。有底線的狀態名稱可點選查看說明。${dm?' 拖曳 ⠿ 或使用 ↑ ↓ 調整同分類順序，會自動儲存。':''}</p>${skillTypes.map((type,n)=>{const list=entries.filter(x=>x.t.type===type),sortKey='skill:'+c.id+':'+type;if(levelSorted(sortKey,type))list.sort((a,b)=>skillLevelRank(a.t)-skillLevelRank(b.t));else sortCategoryEntries(list,sortKey,x=>x.t);const key=c.id+':group:'+n;return `<details class="skill-group" data-skill-open="${esc(key)}" ${skillOpen(key,true)?'open':''}><summary><span>${['⚔','⛨','✦','◈','◇'][n]} ${type}</span><span>${list.length} 項 ${skillLevelButton(sortKey,type)} ${raritySortButton(sortKey)}<span aria-hidden="true">⌄</span></span></summary><div class="skill-grid ${type===spiritType?'spirit-grid':''}">${list.map(({entry,t},index)=>skillCard(t,entry,c.id,index,list.length)).join('')||'<p class="skill-empty">此分類尚無項目。</p>'}</div></details>`}).join('')}</section>`}
@@ -77,6 +77,75 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-rarity-sor
 
 document.addEventListener('click',e=>{const b=e.target.closest('[data-skill-level-sort]');if(!b)return;e.preventDefault();e.stopPropagation();const key=b.dataset.skillLevelSort,on=skillLevelSort.get(key)!==false&&!categoryRaritySort.get(key);categoryRaritySort.delete(key);skillLevelSort.set(key,!on);const panel=document.querySelector('.skills-panel');if(panel)panel.outerHTML=skillsPanel()});
 
+function spiritOverview(t){
+ return `<div class="spirit-overview">${t.overviewImage?`<button class="spirit-overview-preview" data-spirit-view="${esc(t.id)}" aria-label="放大${esc(t.name)}能力一覽圖"><img src="${esc(t.overviewImage)}" alt="${esc(t.name)}能力一覽圖" loading="lazy"><span>點開放大能力一覽圖 ↗</span></button>`:''}${dm?`<button data-spirit-image-edit="${esc(t.id)}">${t.overviewImage?'更換／移除':'上傳'}能力一覽圖</button>`:''}</div>`;
+}
+function combatSpiritReferences(c){
+ const spirits=(c.skills||[]).map(e=>(state.skillLibrary||[]).find(t=>t.id===e.skillId&&t.type===spiritType)).filter(Boolean);
+ if(!spirits.length)return '';
+ return `<div class="combat-spirit-references"><small>寄宿／附身／靈魂聯繫／靈體</small><div>${spirits.map(t=>`<button data-spirit-view="${esc(t.id)}">◇ ${esc(t.name)} <span>${t.overviewImage?'能力圖 ↗':'說明 ↗'}</span></button>`).join('')}</div></div>`;
+}
+function viewSpiritReference(id){
+ const t=(state.skillLibrary||[]).find(t=>t.id===id&&t.type===spiritType);
+ if(!t)return;
+ modal(`<h2>${esc(t.name)}</h2><div class="actions"><button data-close>關閉</button>${dm?`<button data-spirit-image-edit="${esc(t.id)}">設定能力一覽圖</button>`:''}</div>${t.overviewImage?`<label class="spirit-zoom">圖片縮放 <input id="spiritZoom" type="range" min="100" max="250" step="25" value="100"><output id="spiritZoomValue">100%</output></label><div class="spirit-image-scroll"><img id="spiritFullImage" src="${esc(t.overviewImage)}" alt="${esc(t.name)}能力一覽圖"></div>`:'<p>尚未上傳能力一覽圖。</p>'}<div class="skill-effect">${conditionMarkup(formatDescription(t.description))}</div>`,'grant');
+ if(t.overviewImage)$('#spiritZoom').oninput=e=>{
+  $('#spiritFullImage').style.width=e.target.value+'%';
+  $('#spiritZoomValue').textContent=e.target.value+'%';
+ };
+}
+async function decodeSpiritOverview(file){
+ if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>8*1024*1024)throw Error('請選擇 8 MB 以內的 JPG、PNG 或 WebP。');
+ const bitmap=await createImageBitmap(file);
+ try{
+  if(bitmap.width<16||bitmap.height<16||bitmap.width*bitmap.height>40000000)throw Error('圖片需至少 16 像素，且不超過 4,000 萬像素。');
+  const canvas=document.createElement('canvas');
+  for(const edge of [3200,2800,2400,2000,1600]){
+   const scale=Math.min(1,edge/Math.max(bitmap.width,bitmap.height));
+   canvas.width=Math.max(1,Math.round(bitmap.width*scale));
+   canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+   const ctx=canvas.getContext('2d');
+   ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+   ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
+   const result=canvas.toDataURL('image/jpeg',.9);
+   if(result.length<700000)return result;
+  }
+  throw Error('圖片內容過大，請先縮小圖片後再上傳。');
+ }finally{bitmap.close()}
+}
+function editSpiritOverview(id){
+ if(!dm)return;
+ const t=(state.skillLibrary||[]).find(t=>t.id===id&&t.type===spiritType);
+ if(!t)return;
+ let image=t.overviewImage||'',busy=false;
+ modal(`<h2>${esc(t.name)} · 能力一覽圖</h2><p>獨立於卡片圖片，保留完整長寬比例。共用此靈體的角色會同步看到更新。</p><fieldset id="spiritImageEditor"><label class="upload-button">選擇能力圖片<input id="spiritOverviewFile" type="file" accept="image/jpeg,image/png,image/webp"></label><p id="spiritOverviewStatus" role="status">JPG／PNG／WebP，最大 8 MB，長圖可上下捲動閱讀。</p><div id="spiritOverviewPreview"></div><div class="actions"><button id="clearSpiritOverview">移除一覽圖</button><button data-close>取消</button><button id="saveSpiritOverview" class="primary">儲存一覽圖</button></div></fieldset>`,'grant');
+ const panel=$('#spiritImageEditor'),status=$('#spiritOverviewStatus'),save=$('#saveSpiritOverview');
+ const preview=()=>{$('#spiritOverviewPreview').innerHTML=image?`<img class="spirit-edit-preview" src="${esc(image)}" alt="能力一覽圖預覽">`:'<p>尚無一覽圖</p>'};
+ preview();
+ $('#spiritOverviewFile').onchange=async e=>{
+  const file=e.target.files[0];if(!file||busy)return;
+  busy=true;panel.disabled=true;status.textContent='處理圖片中…';
+  try{const result=await decodeSpiritOverview(file);if(!panel.isConnected)return;image=result;preview();status.textContent='預覽已更新，按儲存後同步至戰鬥頁。'}
+  catch(err){status.textContent=err.message}
+  finally{busy=false;panel.disabled=false}
+ };
+ $('#clearSpiritOverview').onclick=()=>{image='';$('#spiritOverviewFile').value='';preview();status.textContent='按儲存後移除一覽圖。'};
+ save.onclick=async()=>{
+  if(!dm||busy)return;
+  const next=structuredClone(state),target=(next.skillLibrary||[]).find(x=>x.id===id&&x.type===spiritType);
+  if(!target){toast('此靈體已變動，請重新開啟。');return}
+  busy=true;panel.disabled=true;target.overviewImage=image;
+  try{if(await persist(next)){render();viewSpiritReference(id);toast('能力一覽圖已儲存')}}
+  finally{busy=false;panel.disabled=false}
+ };
+}
+document.addEventListener('click',e=>{
+ const b=e.target.closest('[data-spirit-view],[data-spirit-image-edit]');
+ if(!b)return;
+ e.preventDefault();
+ if(b.dataset.spiritView)viewSpiritReference(b.dataset.spiritView);
+ else editSpiritOverview(b.dataset.spiritImageEdit);
+});
 function moveSkillCategories(next,ids,destination){
  if(!skillTypes.includes(destination)||destination===spiritType)throw Error('請選擇技能分類。');
  const targets=(next.skillLibrary||[]).filter(t=>ids.has(t.id));
