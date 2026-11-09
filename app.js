@@ -31,14 +31,21 @@ function validDivineLinks(links) {
  if (links === undefined) return true;
  return Array.isArray(links) && links.every(link => link && ['id','name','devotion'].every(key =>
   typeof link[key] === 'string' && link[key].trim() && link[key].length <= 80
- )) && new Set(links.map(link => link.id)).size === links.length &&
+ ) && (link.title === undefined || typeof link.title === 'string' && link.title.length <= 120)
+   && (link.description === undefined || typeof link.description === 'string' && link.description.length <= 5000)
+   && (link.image === undefined || imageValid(link.image))) && new Set(links.map(link => link.id)).size === links.length &&
   new Set(links.map(link => link.name.trim())).size === links.length;
 }
 function divinePanel(character) {
  if (character?.id !== divineOwner) return '';
  const links = character.divineLinks || [];
- const rows = links.map(link => `<li><strong>${esc(link.name)}</strong>　<span class="tag">虔誠程度 · ${esc(link.devotion)}</span> ${dm ? `<button type="button" data-divinity="${esc(link.id)}">編輯</button>` : ''}</li>`).join('');
- return `<section class="panel"><div class="section-head"><h2>神祇連結</h2><span class="tag">已連結 ${links.length} 位神祇</span></div>${rows ? `<ul>${rows}</ul>` : '<p>目前尚未連結神祇。</p>'}${dm ? '<button type="button" data-divinity="">＋ 新增神祇連結</button>' : ''}</section>`;
+ const rows = links.map(link => `<li class="divine-card">
+  ${link.image ? `<img class="divine-portrait" src="${esc(link.image)}" alt="${esc(link.name)}的神像" loading="lazy">` : ''}
+  <div><strong>${esc(link.name)}</strong> ${link.title ? `<span>〈${esc(link.title)}〉</span>` : ''}
+  <span class="tag">虔誠程度 · ${esc(link.devotion)}</span>
+  ${link.description ? `<p class="memo-text">${esc(link.description)}</p>` : ''}
+  ${dm ? `<button type="button" data-divinity="${esc(link.id)}">編輯</button>` : ''}</div></li>`).join('');
+ return `<section class="panel"><div class="section-head"><h2>神祇連結</h2><span class="tag">已連結 ${links.length} 位神祇</span></div>${rows ? `<ul class="divine-list">${rows}</ul>` : '<p>目前尚未連結神祇。</p>'}${dm ? '<button type="button" data-divinity="">＋ 新增神祇連結</button>' : ''}</section>`;
 }
 document.addEventListener('click', event => {
  const trigger = event.target.closest('[data-divinity]');
@@ -48,18 +55,43 @@ document.addEventListener('click', event => {
  const previous = character?.divineLinks?.find(link => link.id === id);
  if (!character || (id && !previous)) return;
  modal(`<h2>${id ? '編輯' : '新增'}神祇連結</h2><form id="divineForm">
-  <label>神祇名稱<input name="name" required maxlength="80" value="${esc(previous?.name || '')}"></label>
+  <label>真名<input name="name" required maxlength="80" value="${esc(previous?.name || '')}"></label>
+  <label>稱號<input name="title" maxlength="120" value="${esc(previous?.title || '')}"></label>
+  <label>神祇圖片（JPG、PNG、WebP，最多 8 MB）<input name="portrait" type="file" accept="image/jpeg,image/png,image/webp"></label>
+  <img class="divine-portrait" data-preview alt="神祇圖片預覽" ${previous?.image ? `src="${esc(previous.image)}"` : 'hidden'}>
+  <button type="button" data-clear-image ${previous?.image ? '' : 'hidden'}>移除圖片</button>
+  <label>描述<textarea name="description" rows="5" maxlength="5000">${esc(previous?.description || '')}</textarea></label>
   <label>虔誠程度<input name="devotion" required maxlength="80" placeholder="例如：15／25 或 虔信" value="${esc(previous?.devotion || '')}"></label>
   <div class="actions">${id ? '<button type="button" class="danger" data-unlink>解除連結</button>' : ''}<button type="button" data-close>取消</button><button class="primary">儲存</button></div></form>`);
  const form = $('#divineForm');
+ let image = previous?.image || '', version = 0;
+ const upload = form.elements.portrait, preview = form.querySelector('[data-preview]');
+ const clearImage = form.querySelector('[data-clear-image]'), submit = form.querySelector('.primary');
+ function showImage(value) {
+  image = value;
+  if (image) preview.src = image;
+  else preview.removeAttribute('src');
+  preview.hidden = clearImage.hidden = !image;
+ }
+ clearImage.onclick = () => { version++; upload.value = ''; showImage(''); submit.disabled = false; };
+ upload.onchange = async () => {
+  const token = ++version, file = upload.files[0];
+  submit.disabled = !!file;
+  if (!file) return;
+  try {
+   const value = await decodeItemImage(file);
+   if (token === version) showImage(value);
+  } catch (error) { if (token === version) {upload.value = ''; toast(error.message);} }
+  finally { if (token === version) submit.disabled = false; }
+ };
  async function save(remove) {
-  if (!dm) return;
+  if (!dm || submit.disabled) return;
   const next = structuredClone(state);
   const target = next.characters.find(c => c.id === divineOwner);
   if (!target) return;
   const links = target.divineLinks ||= [];
   const index = links.findIndex(link => link.id === id);
-  if (id && (index < 0 || links[index].name !== previous.name || links[index].devotion !== previous.devotion)) {
+  if (id && (index < 0 || JSON.stringify(links[index]) !== JSON.stringify(previous))) {
    toast('這筆連結已更新，請重新開啟編輯。'); return;
   }
   if (remove) {
@@ -70,7 +102,7 @@ document.addEventListener('click', event => {
    const devotion = form.elements.devotion.value.trim();
    if (!name || !devotion) { toast('請填寫神祇名稱與虔誠程度。'); return; }
    if (links.some(link => link.id !== id && link.name === name)) { toast('這位神祇已有連結，可直接編輯。'); return; }
-   const link = {id: id || uid(), name, devotion};
+   const link = {id: id || uid(), name, devotion, image, title: form.elements.namedItem('title').value.trim(), description: form.elements.description.value.trim()};
    if (index < 0) links.push(link);
    else links[index] = link;
   }

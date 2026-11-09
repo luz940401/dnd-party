@@ -256,3 +256,12 @@ details.appearance-editor>summary{cursor:pointer;font-weight:700;color:#61451f;f
 @media(max-width:1050px){.combat-row .combat-identity{grid-template-columns:minmax(7rem,.7fr) minmax(0,1.4fr)}.combat-row .combat-identity .combat-note{grid-column:1/-1;grid-row:auto}}
 @media(max-width:899px){.combat-book{display:block}.combat-bookmarks{top:0;margin-bottom:8px;max-height:40dvh}.combat-bookmarks>div{display:flex;flex-wrap:wrap;gap:4px}.combat-bookmarks button{width:auto}.combat-row{scroll-margin-top:4rem}}
 @media(max-width:600px){.combat-row .combat-identity{grid-template-columns:1fr}.combat-status-pair,.combat-row .combat-identity .combat-note{grid-column:1}.combat-status-pair .combat-armor-compact{font-size:12px}}
+
+.divine-list,.battle-memos{list-style:none;padding:0;margin:.5rem 0}
+.divine-card,.battle-memo{display:flex;align-items:flex-start;gap:.65rem;padding:.55rem 0;border-top:1px solid #b99c65;overflow-wrap:anywhere}
+.divine-portrait{width:clamp(70px,16vw,128px);height:auto;max-height:180px;object-fit:contain}
+.memo-text{white-space:pre-wrap;overflow-wrap:anywhere;min-width:0}
+.battle-memo label{display:flex;align-items:baseline;gap:.5rem;flex:1;min-width:0}
+.battle-memo input{width:auto;flex:none}
+.battle-memo.is-done .memo-text{text-decoration:line-through}
+.battle-memo button{flex:none}
