@@ -12,13 +12,13 @@ const qiVesselCapacity=4;
 function equippedQiVessel(c,s){
  const id=c?.equipment?.offhand;
  if(!id)return null;
- return s.items.find(i=>i.id===id&&i.owner===c.id&&i.qty>0&&templateKey(i)==='四象崁晶甲')||null;
+ return s.items.find(i=>i.id===id&&i.owner===c.id&&i.qty>0&&templateKey(i)==='四象嵌晶匣')||null;
 }
 function qiVesselPanel(c,item){
  if(!item)return '';
  const count=item.storedQi??0;
  const lights=Array.from({length:qiVesselCapacity},(_,i)=>i<count?'◆':'◇').join(' ');
- return `<div class="resource-pool qi-vessel"><div><strong>四象崁晶甲 · 儲氣</strong><small>${count} / ${qiVesselCapacity}</small></div><span class="qi-lights" aria-hidden="true">${lights}</span>${dm?`<div class="qi-actions"><button type="button" data-qi-action="store" data-qi-item="${esc(item.id)}" ${count===qiVesselCapacity||availableFocusIndex(c)===undefined?'disabled':''} title="消耗角色 1 點氣，存入這件副武器">存入 1 氣</button><button type="button" data-qi-action="spend" data-qi-item="${esc(item.id)}" ${count===0?'disabled':''}>使用 1 氣</button></div>`:''}</div>`;
+ return `<div class="resource-pool qi-vessel"><div><strong>四象嵌晶匣 · 儲氣</strong><small>${count} / ${qiVesselCapacity}</small></div><span class="qi-lights" aria-hidden="true">${lights}</span>${dm?`<div class="qi-actions"><button type="button" data-qi-action="store" data-qi-item="${esc(item.id)}" ${count===qiVesselCapacity||availableFocusIndex(c)===undefined?'disabled':''} title="消耗角色 1 點氣，存入這件副武器">存入 1 氣</button><button type="button" data-qi-action="spend" data-qi-item="${esc(item.id)}" ${count===0?'disabled':''}>使用 1 氣</button></div>`:''}</div>`;
 }
 function resourcePanel(c){const cls=resourceClass(c),pools=resourcePools(c),label=resourceClasses.find(([k])=>k===cls)?.[1]||'未設定',item=equippedQiVessel(c,state);if(!pools.length&&!item)return '';return `<section class="combat-resources" data-resource-owner="${esc(c.id)}"><div class="section-head"><h3>✦ 戰鬥資源</h3><span class="tag">${esc(label)}${resourceLevel(c)?' · LV.'+resourceLevel(c):''}</span></div><div class="resource-pools">${pools.map(p=>{const spent=c.resourceSpent?.[p.key]||[],remaining=p.max-spent.filter(n=>n<p.max).length;return `<div class="resource-pool"><div><strong>${p.label}</strong><small>${remaining} / ${p.max}</small></div><div class="resource-lights">${Array.from({length:p.max},(_,i)=>`<button class="resource-light ${spent.includes(i)?'spent':'lit'}" data-resource="${p.key}" data-pip="${i}" aria-pressed="${!spent.includes(i)}" aria-label="${esc(c.name)} ${p.label} 第 ${i+1} 格：${spent.includes(i)?'已消耗，點選恢復':'可用，點選消耗'}" ${dm?'':'disabled'}><span aria-hidden="true">${spent.includes(i)?'○':'◆'}</span></button>`).join('')}</div></div>`}).join('')}${qiVesselPanel(c,item)}</div>${pools.length?`<small>亮燈＝可用，暗燈＝已消耗。${dm?'點一下消耗，再點恢復；每次操作自動儲存。':'由 DM 操作，玩家可即時查看。'}${cls==='monk'?' 氣點可於短休或長休恢復。':''}</small>`:''}${typeof bardControls==='function'?bardControls(c):''}</section>`}
 function toggleResource(next,id,key,index){const c=next.characters.find(c=>c.id===id),pool=c&&resourcePools(c).find(p=>p.key===key);if(!pool||!Number.isInteger(index)||index<0||index>=pool.max)return false;c.resourceSpent??={};const spent=c.resourceSpent[key]||[];c.resourceSpent[key]=spent.includes(index)?spent.filter(n=>n!==index):[...spent,index];return true}
@@ -55,7 +55,7 @@ function availableFocusIndex(c){
 function changeStoredQi(next,owner,itemId,action){
  const c=next.characters.find(c=>c.id===owner);
  const item=equippedQiVessel(c,next);
- if(!item||item.id!==itemId)throw Error('請先將四象崁晶甲裝備在副武器欄。');
+ if(!item||item.id!==itemId)throw Error('請先將四象嵌晶匣裝備在副武器欄。');
  const count=item.storedQi??0;
  if(action==='spend'){
   if(count===0)throw Error('這件裝備沒有儲氣。');
