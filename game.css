@@ -265,3 +265,10 @@ details.appearance-editor>summary{cursor:pointer;font-weight:700;color:#61451f;f
 .battle-memo input{width:auto;flex:none}
 .battle-memo.is-done .memo-text{text-decoration:line-through}
 .battle-memo button{flex:none}
+
+.combat-equipment-icon{display:inline-grid;vertical-align:middle;width:32px;height:32px;margin-inline-end:.45rem;border-radius:50%;border:1px solid #a78342;overflow:hidden;background:#302c26}
+.combat-equipment-icon>.item-icon{width:100%;height:100%;box-sizing:border-box;border:0;border-radius:50%;font-size:19px;overflow:hidden}
+.combat-equipment-icon img{width:100%;height:100%;object-fit:contain}
+.combat-skill-overview details{border-top:1px solid #bc9e67;padding:.45rem 0}
+.combat-skill-overview summary{cursor:pointer;overflow-wrap:anywhere}
+.combat-skill-summary{display:block;margin:.2rem 0 0 1rem;font-size:.9rem}

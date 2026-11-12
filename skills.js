@@ -120,11 +120,36 @@ function validSpiritOverview(src){
 function spiritOverview(t){
  return `<div class="spirit-overview">${t.overviewImage?`<button class="spirit-overview-preview" data-spirit-view="${esc(t.id)}" aria-label="放大${esc(t.name)}能力一覽圖"><img src="${esc(t.overviewImage)}" alt="${esc(t.name)}能力一覽圖" loading="lazy"><span>點開放大能力一覽圖 ↗</span></button>`:''}${dm?`<button data-spirit-image-edit="${esc(t.id)}">${t.overviewImage?'更換／移除':'上傳'}能力一覽圖</button>`:''}</div>`;
 }
+function combatSkillsOverview(character) {
+ const assigned = new Map((character.skills || []).map(entry => [entry.skillId, entry]));
+ const templates = new Map((state.skillLibrary || []).map(skill => [skill.id, skill]));
+ const groups = skillTypes.filter(type => type !== spiritType).map(type => {
+  const skills = Array.from(assigned.keys(), id => templates.get(id)).filter(skill => skill?.type === type);
+  if (!skills.length) return '';
+  skills.sort((a,b) => skillLevelRank(a) - skillLevelRank(b));
+  const rows = skills.map(skill => {
+   const remaining = assigned.get(skill.id).remaining;
+   return `<details><summary>${skillLevelBadge(skill)} <strong>${esc(skill.name)}</strong> ${skillActionBadge(skill)}
+    ${remaining ? `<small>剩餘 ${esc(remaining)}</small>` : ''}
+    ${skill.summary ? `<span class="combat-skill-summary">${esc(skill.summary)}</span>` : ''}</summary>${skillBody(skill)}</details>`;
+  });
+  return `<section><h3>${esc(type)}</h3>${rows.join('')}</section>`;
+ });
+ return `<div class="combat-skill-overview"><div class="section-head"><h2>${esc(character.name)} · 技能概覽</h2><button type="button" data-close>關閉</button></div>
+  ${groups.join('') || '<p>尚未分配技能。</p>'}</div>`;
+}
+document.addEventListener('click', event => {
+ const button = event.target.closest('[data-combat-skills]');
+ if (!button) return;
+ const character = state.characters.find(c => c.id === button.dataset.combatSkills);
+ if (character) modal(combatSkillsOverview(character));
+});
 function combatSpiritReferences(c){
  const spirits=(c.skills||[]).map(e=>(state.skillLibrary||[]).find(t=>t.id===e.skillId&&t.type===spiritType)).filter(Boolean);
- if(!spirits.length)return '';
- return `<div class="combat-spirit-references"><small>寄宿／附身／靈魂聯繫／靈體</small><div>${spirits.map(t=>`<button data-spirit-view="${esc(t.id)}">◇ ${esc(t.name)} <span>${t.overviewImage?'能力圖 ↗':'說明 ↗'}</span></button>`).join('')}</div></div>`;
+
+ return `<div class="combat-spirit-references">${spirits.length?'<small>寄宿／附身／靈魂聯繫／靈體</small>':''}<div><button type="button" data-combat-skills="${esc(c.id)}">技能概覽</button>${spirits.map(t=>`<button data-spirit-view="${esc(t.id)}">◇ ${esc(t.name)} <span>${t.overviewImage?'能力圖 ↗':'說明 ↗'}</span></button>`).join('')}</div></div>`;
 }
+
 function viewSpiritReference(id){
  const t=(state.skillLibrary||[]).find(t=>t.id===id&&t.type===spiritType);
  if(!t)return;
