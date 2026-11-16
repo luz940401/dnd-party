@@ -129,9 +129,9 @@ function combatSkillsOverview(character) {
   skills.sort((a,b) => skillLevelRank(a) - skillLevelRank(b));
   const rows = skills.map(skill => {
    const remaining = assigned.get(skill.id).remaining;
-   return `<details><summary>${skillLevelBadge(skill)} <strong>${esc(skill.name)}</strong> ${skillActionBadge(skill)}
+   return `<div class="combat-skill-choice"><details><summary>${skillLevelBadge(skill)} <strong>${esc(skill.name)}</strong> ${skillActionBadge(skill)}
     ${remaining ? `<small>剩餘 ${esc(remaining)}</small>` : ''}
-    ${skill.summary ? `<span class="combat-skill-summary">${esc(skill.summary)}</span>` : ''}</summary>${skillBody(skill)}</details>`;
+    ${skill.summary ? `<span class="combat-skill-summary">${esc(skill.summary)}</span>` : ''}</summary>${skillBody(skill)}</details>${dm ? `<button type="button" data-use-skill="${esc(skill.id)}" data-caster="${esc(character.id)}">使用</button>` : ''}</div>`;
   });
   return `<section><h3>${esc(type)}</h3>${rows.join('')}</section>`;
  });

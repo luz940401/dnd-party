@@ -272,3 +272,5 @@ details.appearance-editor>summary{cursor:pointer;font-weight:700;color:#61451f;f
 .combat-skill-overview details{border-top:1px solid #bc9e67;padding:.45rem 0}
 .combat-skill-overview summary{cursor:pointer;overflow-wrap:anywhere}
 .combat-skill-summary{display:block;margin:.2rem 0 0 1rem;font-size:.9rem}
+
+.combat-skill-choice{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:start}.combat-skill-choice>button{margin-top:4px}
