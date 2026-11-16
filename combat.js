@@ -52,13 +52,84 @@ function combatCompanions(c){
  const type=companionTypeFor(c);
  return (c.companions||[]).filter(p=>p.type===type&&(type==='靈寵'?p.id===c.companionEquip?.id:p.summoned));
 }
+function hpTarget(data, ownerId, partnerId) {
+ const owner = data.characters.find(c => c.id === ownerId);
+ if (!owner) throw Error('找不到此角色。');
+ const partner = partnerId && combatCompanions(owner).find(p => p.id === partnerId);
+ if (partnerId && !partner) throw Error('夥伴已離開戰鬥。');
+ const values = partner ? {current:partner.hp, max:partner.type==='靈寵'?petMaxHp(owner):partner.maxHp} : hpValues(owner);
+ if (!/^\d{1,6}$/.test(String(values.current))) throw Error('請先設定目前 HP。');
+ return {owner, partner, name:partner?.name || owner.name, before:Number(values.current), max:values.max == null || values.max === '' ? 999999 : Number(values.max)};
+}
+function hpChangeResult(target, operation, amount) {
+ if (!/^\d{1,6}$/.test(String(amount)) || Number(amount)<1) throw Error('請輸入大於 0 的整數。');
+ if (target.partner?.type === '靈寵' && target.before === 0) throw Error('請先召喚靈寵。');
+ return operation==='受傷' ? Math.max(0,target.before-Number(amount)) : Math.min(target.max,target.before+Number(amount));
+}
+function hpHistory() {
+ const entries = state.battleDamage?.hpChanges || [];
+ const last = entries.at(-1);
+ return `<details><summary>HP 異動 · ${entries.length} 筆</summary><div class="battle-history">${entries.slice().reverse().map(e=>`<article><strong>${esc(e.name)} · ${esc(e.operation)} ${esc(e.amount)}</strong><small>HP ${esc(e.before)} → ${esc(e.after)}</small></article>`).join('') || '<p>尚無 HP 異動。</p>'}</div></details>${dm && last ? `<button data-undo-hp="${esc(last.id)}">撤銷上一筆 HP 異動 · ${esc(last.name)}</button>` : ''}`;
+}
+function openHpChange(button) {
+ const cid = button.dataset.hpChange, pid = button.dataset.partner;
+ const target = hpTarget(state,cid,pid);
+ modal(`<h2>${esc(target.name)} · HP 加減</h2><form id="hpChangeForm"><label>操作<select name="operation"><option>受傷</option><option>治療</option></select></label>
+  <label>點數<input name="amount" type="number" min="1" max="999999" step="1" inputmode="numeric" required autofocus></label>
+  <p role="status"></p><div class="actions"><button type="button" data-close>取消</button><button class="primary">確認 HP 異動</button></div></form>`);
+ const form=$('#hpChangeForm'), amount=form.elements.amount, operation=form.elements.operation, submit=form.querySelector('.primary');
+ function preview() {
+  let message='目前 HP '+target.before;
+  submit.disabled=true;
+  if (amount.value) {
+   try {
+    const after=hpChangeResult(target,operation.value,amount.value);
+    message=`HP ${target.before} → ${after}`;
+    submit.disabled=after===target.before;
+   } catch(error) { message=error.message; }
+  }
+  form.querySelector('[role=status]').textContent=message;
+ }
+ form.oninput=preview;
+ preview();
+ form.onsubmit=async event=>{
+  event.preventDefault();
+  if (!dm || submit.disabled) return;
+  submit.disabled=true;
+  try {
+   const next=structuredClone(state), current=hpTarget(next,cid,pid);
+   if(current.before!==target.before || current.max!==target.max) throw Error('HP 已更新，請重新開啟預覽。');
+   const after=hpChangeResult(current,operation.value,amount.value);
+   applyCurrentHp(next,cid,pid,String(after));
+   next.battleDamage ??= {entries:[]};
+   (next.battleDamage.hpChanges ??= []).push({id:uid(),cid,pid,name:current.name,operation:operation.value,amount:Number(amount.value),before:current.before,after});
+   if(await persist(next)){close();render();toast(`${current.name} HP ${current.before} → ${after}`);}
+  } catch(error){toast(error.message)} finally{submit.disabled=false}
+ };
+}
+document.addEventListener('click',async event=>{
+ const button=event.target.closest('[data-hp-change],[data-undo-hp]');
+ if(!button || !dm || button.disabled)return;
+ try {
+  if(button.hasAttribute('data-hp-change')) {openHpChange(button);return;}
+  const next=structuredClone(state), list=next.battleDamage?.hpChanges, last=list?.at(-1);
+  if(!last || last.id!==button.dataset.undoHp) throw Error('紀錄已更新。');
+  const target=hpTarget(next,last.cid,last.pid);
+  if(target.before!==last.after || last.before>target.max) throw Error('目前 HP 已變更，請手動校正。');
+  if(target.partner?.type==='靈寵' && target.before===0) setCompanionHp(next,last.cid,last.pid,last.before,target.max,true);
+  else applyCurrentHp(next,last.cid,last.pid,String(last.before));
+  list.pop();
+  button.disabled=true;
+  if(await persist(next)){render();toast(`已撤銷，${last.name} HP 回到 ${last.before}`);}
+ } catch(error){toast(error.message)} finally{button.disabled=false}
+});
 function inlineHp(c, companion) {
  const hp = companion ? companion.hp : hpValues(c).current;
  const max = companion ? (companion.type==='靈寵' ? petMaxHp(c) : companion.maxHp) : hpValues(c).max;
  const dead = companion?.type==='靈寵' && hp===0;
  const name = companion?.name || c.name;
  const input = dm && !dead ? `<input aria-label="${esc(name)}目前 HP" data-inline-hp="${esc(c.id)}" data-partner="${esc(companion?.id || '')}" type="number" inputmode="numeric" min="0" max="${esc(max || '999999')}" value="${esc(hp ?? '')}">` : esc(hp ?? '—');
- return `<span class="battle-hp-field">HP ${input} / ${esc(max ?? '—') || '—'}</span>${dm && dead ? `<button data-companion-hp="${esc(companion.id)}" data-companion-owner="${esc(c.id)}">召喚成功…</button>` : ''}`;
+ return `<span class="battle-hp-field">HP ${input} / ${esc(max ?? '—') || '—'}</span>${dm && !dead ? `<button type="button" data-hp-change="${esc(c.id)}" data-partner="${esc(companion?.id || '')}" aria-label="${esc(name)}受傷或治療">受傷／治療</button>` : ''}${dm && dead ? `<button data-companion-hp="${esc(companion.id)}" data-companion-owner="${esc(c.id)}">召喚成功…</button>` : ''}`;
 }
 function combatCompanionBadges(c) {
  return combatCompanions(c).map(p=>`<div class="battle-pet-badge">${companionArt(p)}<span>${esc(p.name)} ${inlineHp(c,p)}</span></div>`).join('');
@@ -129,11 +200,13 @@ function editCombatHp(id){
 }
 document.addEventListener('click',e=>{const b=e.target.closest('[data-combat-hp]');if(b)editCombatHp(b.dataset.combatHp)});
 
-function validBattle(s){const b=s.battleDamage;if(b===undefined)return true;return b&&Array.isArray(b.entries)&&b.entries.length<=10000&&new Set(b.entries.map(e=>e?.id)).size===b.entries.length&&b.entries.every(e=>e&&typeof e.id==='string'&&typeof e.characterId==='string'&&typeof e.name==='string'&&e.name.length<=80&&Number.isSafeInteger(e.total)&&e.total>=0&&e.total<=10000000&&typeof e.formula==='string'&&e.formula.length<=1000&&typeof e.at==='string')}
+function validBattle(s){const b=s.battleDamage;
+ if(b?.hpChanges!==undefined && !(Array.isArray(b.hpChanges) && b.hpChanges.every(e=>e && ['id','cid','pid','name'].every(k=>typeof e[k]==='string') && ['受傷','治療'].includes(e.operation) && ['amount','before','after'].every(k=>Number.isInteger(e[k]) && e[k]>=0 && e[k]<=999999))))return false;
+ if(b===undefined)return true;return b&&Array.isArray(b.entries)&&b.entries.length<=10000&&new Set(b.entries.map(e=>e?.id)).size===b.entries.length&&b.entries.every(e=>e&&typeof e.id==='string'&&typeof e.characterId==='string'&&typeof e.name==='string'&&e.name.length<=80&&Number.isSafeInteger(e.total)&&e.total>=0&&e.total<=10000000&&typeof e.formula==='string'&&e.formula.length<=1000&&typeof e.at==='string')}
 function battleEntries(s=state){return s.battleDamage?.entries||[]}
 function battleTotal(s=state,id){return battleEntries(s).filter(e=>!id||e.characterId===id).reduce((sum,e)=>sum+e.total,0)}
 function recordBattleDamage(next,c,r,id,at){if(r.error||!Number.isSafeInteger(r.total)||r.total<0)throw Error(r.error||'傷害不可小於 0。');next.battleDamage??={entries:[]};if(next.battleDamage.entries.some(e=>e.id===id))return next;const formula=`${r.mode} · 技能 ${r.skillTotal}${r.sneakRoll?` ＋ 偷襲 ${r.sneakRoll} × ${r.skillMultiplier} → ${r.sneakTotal}`:''} ＋ 調整值 ${r.modifier} ＋ 主武器 ${r.weapon?.name||'未裝備'} (${r.attacks.weapon.total}) ＋ 副武器 ${r.offhand?.name||'未裝備'} (${r.attacks.offhand.total}) · ${r.mitigation}`;next.battleDamage.entries.push({id,characterId:c.id,name:c.name,total:r.total,formula,at});if(!validBattle(next))throw Error('戰鬥紀錄已達上限，請先匯出紀錄並重置。');return next}
 function battleCharacterSummary(c){const entries=battleEntries().filter(e=>e.characterId===c.id);return `<div class="battle-character"><span>本場累計傷害</span><strong>${battleTotal(state,c.id)}</strong><small>已記錄 ${entries.length} 次攻擊${entries.length?' · 上次 '+entries[entries.length-1].total+' 傷害':''}</small></div>`}
-function battleSummary(){const entries=battleEntries();return `<section class="panel battle-summary"><div class="section-head"><h2>本場戰鬥紀錄</h2><strong>全隊總傷害 ${battleTotal()}</strong>${dm?'<button data-reset-battle>結束戰鬥／重置…</button>':''}</div><p>按「記錄本次傷害」才會加入累計，換武器與長休不會清空。紀錄會儲存至雲端。</p><details><summary>攻擊紀錄 · ${entries.length} 筆</summary><div class="battle-history">${entries.slice().reverse().map(e=>`<article><strong>${esc(e.name)} · ${e.total} 傷害</strong><small>${esc(e.formula)}</small><time>${esc(new Date(e.at).toLocaleString('zh-TW'))}</time></article>`).join('')||'<p>尚未記錄傷害。</p>'}</div></details></section>`}
+function battleSummary(){const entries=battleEntries();return `<section class="panel battle-summary"><div class="section-head"><h2>本場戰鬥紀錄</h2><strong>全隊總傷害 ${battleTotal()}</strong>${dm?'<button data-reset-battle>結束戰鬥／重置…</button>':''}</div><p>按「記錄本次傷害」才會加入累計，換武器與長休不會清空。紀錄會儲存至雲端。</p><details><summary>攻擊紀錄 · ${entries.length} 筆</summary><div class="battle-history">${entries.slice().reverse().map(e=>`<article><strong>${esc(e.name)} · ${e.total} 傷害</strong><small>${esc(e.formula)}</small><time>${esc(new Date(e.at).toLocaleString('zh-TW'))}</time></article>`).join('')||'<p>尚未記錄傷害。</p>'}</div></details>${hpHistory()}</section>`}
 let recordingBattle=false;
-document.addEventListener('click',async e=>{const b=e.target.closest('[data-record-damage],[data-reset-battle]');if(!b||!dm||recordingBattle)return;if(b.hasAttribute('data-reset-battle')){modal(`<h2>結束本場戰鬥並重置？</h2><p>將清空本場 ${battleEntries().length} 筆攻擊紀錄與全隊累計 ${battleTotal()} 傷害。同時恢復傀儡的每場一次技能；每日技能、HP、裝備與法術位維持目前狀態。</p><div class="actions"><button data-close>取消</button><button class="primary" id="confirmBattleReset">確認重置</button></div>`);$('#confirmBattleReset').onclick=async()=>{if(!dm||recordingBattle)return;recordingBattle=true;const button=$('#confirmBattleReset');button.disabled=true;try{const next=structuredClone(state);next.battleDamage={entries:[]};resetPuppetUses(next,'battle');if(await persist(next)){combatDrafts.clear();if(typeof companionDamageDrafts!=='undefined')companionDamageDrafts.clear();close();render();toast('本場戰鬥已重置')}}finally{recordingBattle=false;button.disabled=false}};return}const row=b.closest('[data-combat-row]'),c=state.characters.find(c=>c.id===row.dataset.combatRow);if(!c)return;const r=combatCalculation(c,row.querySelector('[data-combat-roll]').value,row.querySelector('[data-combat-ability]').value,state,readCombatAttack(row));recordingBattle=true;b.disabled=true;try{const next=structuredClone(state);recordBattleDamage(next,c,r,uid(),new Date().toISOString());if(await persist(next)){const draft=combatDrafts.get(c.id)||{};combatDrafts.set(c.id,{...draft,roll:'',sneakRoll:'',weaponRoll:'',offhandRoll:''});render();toast('已記錄本次 '+r.total+' 傷害')}}catch(err){toast(err.message)}finally{recordingBattle=false;b.disabled=false}});
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-record-damage],[data-reset-battle]');if(!b||!dm||recordingBattle)return;if(b.hasAttribute('data-reset-battle')){modal(`<h2>結束本場戰鬥並重置？</h2><p>本場 HP 異動紀錄也會清空。將清空本場 ${battleEntries().length} 筆攻擊紀錄與全隊累計 ${battleTotal()} 傷害。同時恢復傀儡的每場一次技能；每日技能、HP、裝備與法術位維持目前狀態。</p><div class="actions"><button data-close>取消</button><button class="primary" id="confirmBattleReset">確認重置</button></div>`);$('#confirmBattleReset').onclick=async()=>{if(!dm||recordingBattle)return;recordingBattle=true;const button=$('#confirmBattleReset');button.disabled=true;try{const next=structuredClone(state);next.battleDamage={entries:[]};resetPuppetUses(next,'battle');if(await persist(next)){combatDrafts.clear();if(typeof companionDamageDrafts!=='undefined')companionDamageDrafts.clear();close();render();toast('本場戰鬥已重置')}}finally{recordingBattle=false;button.disabled=false}};return}const row=b.closest('[data-combat-row]'),c=state.characters.find(c=>c.id===row.dataset.combatRow);if(!c)return;const r=combatCalculation(c,row.querySelector('[data-combat-roll]').value,row.querySelector('[data-combat-ability]').value,state,readCombatAttack(row));recordingBattle=true;b.disabled=true;try{const next=structuredClone(state);recordBattleDamage(next,c,r,uid(),new Date().toISOString());if(await persist(next)){const draft=combatDrafts.get(c.id)||{};combatDrafts.set(c.id,{...draft,roll:'',sneakRoll:'',weaponRoll:'',offhandRoll:''});render();toast('已記錄本次 '+r.total+' 傷害')}}catch(err){toast(err.message)}finally{recordingBattle=false;b.disabled=false}});
