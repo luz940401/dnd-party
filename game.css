@@ -276,3 +276,5 @@ details.appearance-editor>summary{cursor:pointer;font-weight:700;color:#61451f;f
 .combat-skill-choice{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:start}.combat-skill-choice>button{margin-top:4px}
 
 .skill-panel-controls{grid-column:1/-1;display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:.6rem;border:1px solid #b59a60}
+
+.target-weaknesses{flex-basis:100%;min-width:0;margin:0;padding:10px 12px;border:1px solid #b8955659;border-radius:8px}.target-weaknesses legend{padding:0 5px;font-weight:700}.target-weaknesses>div{display:flex;flex-wrap:wrap;gap:8px}.target-weaknesses label.element-badge{display:inline-flex;align-items:center;gap:5px;cursor:pointer;margin:0;padding:6px 9px}.target-weaknesses input[type="checkbox"]{width:16px;height:16px;min-height:0;margin:0;flex:0 0 auto}.target-weaknesses small{display:block;margin-top:7px}
